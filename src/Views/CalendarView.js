@@ -1,45 +1,50 @@
 import React from "react";
 import moment from "moment";
-import { StyleSheet, Text, Dimensions, View, TouchableHighlight } from "react-native";
+import { StyleSheet, Text, Dimensions, View, TouchableHighlight, Alert } from "react-native";
 import BaseView from "./BaseView";
 import { Calendar } from 'react-native-calendars';
 import { SALMON } from "../constants";
-const { width } = Dimensions.get('window');
-import firebase from "../../firebase";
+import firebase, { auth } from "../../firebase";
 
 export default class CalendarView extends BaseView {
     constructor(props){
         super(props)
         this.createBooking = this.createBooking.bind(this);
+        this.markDate = this.markDate.bind(this);
 
         this.state = { 
-            markedDates: { 
-                "2018-05-16": { 
-                    selected: true, 
-                    marked: true, 
-                    selectedColor: SALMON 
-                } 
-            } 
+            markedDates: {} 
         };
     }
 
     createBooking() {
-        debugger
+        const { markedDates } = this.state;
         const { navigate } = this.props.navigation;
-        fetch("https://foodu-api.herokuapp.com/api/v1/bookings", {
-            method: 'POST',
-            body: JSON.stringify({
-                authId: firebase.auth().currentUser.uid, 
-                markedDates: Object.keys(this.state.markedDates)})
-          }).then(res => res.json())
-          .catch(error => Alert.alert("Error", "An error has occured when submitting your schedule. Please try again."))
-          .then(response => navigate("ScheduleWeek"));
+        Object.keys(markedDates).forEach(d => {
+            fetch("https://foodu-api.herokuapp.com/api/v1/bookings", {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    "foodTruckId": auth.currentUser.uid, 
+                    "date": d
+                })
+            })
+            .catch(error => {
+                Alert.alert("Error", "An error has occured when submitting your schedule. Please try again.")
+            })
+            .then(response => {
+                navigate("ScheduleWeek")
+            });
+        })
     }
 
     markDate = (day) => {
-        debugger
         const selectedDay = moment(day.dateString).format("YYYY-MM-DD");
         let selected = true;
+
         if (this.state.markedDates[selectedDay]) {
             // Already in marked dates, so reverse current marked state
             selected = !this.state.markedDates[selectedDay].selected;
@@ -57,7 +62,16 @@ export default class CalendarView extends BaseView {
         fetch("https://foodu-api.herokuapp.com/api/v1/bookings")
         .then(response => response.json())
         .then(bookings => {
-            let markedDates = bookings.map(b => {
+            let markedDates = bookings
+                .filter(x => x.foodtruck_auth_id == auth.currentUser.uid);
+
+            markedDates.sort(function compare(a, b) {
+                var dateA = new Date(a.date);
+                var dateB = new Date(b.date);
+                return dateA - dateB;
+            });
+            
+            markedDates.map(b => {
                 return {
                     [b.date]: { 
                         selected: false, 

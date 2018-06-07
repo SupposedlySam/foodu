@@ -4,6 +4,7 @@ import BaseView from "./BaseView";
 import { MapView as ExpoMapView, Marker } from "expo";
 import MapViewCallout from "../Components/MapViewCallout";
 import { LINK_COLOR } from "../constants";
+import firebase, { auth } from "../../firebase"
 
 export default class MapView extends BaseView {
   constructor() {
@@ -43,7 +44,9 @@ export default class MapView extends BaseView {
       "An Error Has Occured", 
       error.message,
       [
-        {text: 'OK', onPress: () => navigate("ScheduleWeek")},
+        {text: 'OK', onPress: () => {
+          navigate("ScheduleWeek")
+        }},
         {text: 'Retry', onPress: () => this.forceUpdateHandler()}
       ],
       { cancelable: false }
@@ -52,22 +55,28 @@ export default class MapView extends BaseView {
 
   requestBooking = () => {
     const { navigate } = this.props.navigation;
-    debugger;
-    fetch("https://foodu-api.herokuapp.com/api/v1/upsert_schedule", {
+    fetch("https://foodu-api.herokuapp.com/api/v1/venues", {
       method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({
-        "authId" : this.firebase.auth().current.uid,
-        "date": this.props.searchDate,
+        "authId" : auth.currentUser.uid,
+        "date": this.props.navigation.state.params.searchDate,
         ...this.state.selectedMarker
       }),
-    }).then(res => res.json())
-    .catch(error => console.error('Error:', error))
-    .then(response => navigate("ScheduleWeek"));
+    })
+    .catch(error => {
+      Alert.alert('Error:', error)
+    })
+    .then(response => {
+      navigate("ScheduleWeek")
+    });
   };
   
   render() {
     const { navigate } = this.props.navigation;
-    
     return (
       <View style={{ flex: 1 }}>
         <ExpoMapView

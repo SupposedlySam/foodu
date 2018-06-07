@@ -6,7 +6,7 @@ import ScheduleWeek from "../Components/ScheduleWeek";
 import ScheduleDetail from "../Components/ScheduleDetail";
 import { SALMON, BROWN } from "../constants";
 const { width, height } = Dimensions.get('window');
-import firebase from "firebase";
+import firebase, { auth } from "../../firebase";
 
 export default class ScheduleWeekView extends BaseView {
   constructor(props) {
@@ -85,7 +85,7 @@ export default class ScheduleWeekView extends BaseView {
       // Store booking info for week
       week.bookings.push(booking)
 
-      if(isLastBooking && hadBookingsFromLastWeek){
+      if(isLastBooking && (hadBookingsFromLastWeek || week.bookings.length > 0)){
         weeks.push(week)
       }
     })
@@ -100,6 +100,7 @@ export default class ScheduleWeekView extends BaseView {
   }
 
   _renderAllScheduleDays() {
+    const { navigate } = this.props.navigation;
     return (
       <ScrollView
           style={styles.scrollview} 
@@ -112,9 +113,9 @@ export default class ScheduleWeekView extends BaseView {
             let range = this._rangeTextFormatter(week);
             return (
               <ScheduleWeek key={range} weekText={range} deviceWidth={this.state.deviceWidth}>
-                {week.bookings.map(booking => (
+                {week.bookings.map((booking, i) => (
                   <ScheduleDetail
-                    key={booking.UUID}
+                    key={i}
                     {...booking}
                     navigate={navigate}
                   />
@@ -143,14 +144,25 @@ export default class ScheduleWeekView extends BaseView {
     .then(response => response.json())
     .catch(error => console.error(error))
     .then(myJson => {
-      return myJson.map(x => {
-        return {
-          date: x.date,
-          name: x.name,
-          address: x.address_street + ", " + x.address_city + " " + x.address_state + ", " + x.address_zip ,
-          timeRange: x.time_range
+      let filteredJson = myJson
+        .filter(x => x.foodtruck_auth_id == auth.currentUser.uid);
+
+        filteredJson.sort(function compare(a, b) {
+            var dateA = new Date(a.date);
+            var dateB = new Date(b.date);
+            return dateA - dateB;
+        });
+
+        return filteredJson.map(x => {
+          return {
+            date: x.date,
+            name: x.venue_name,
+            address: x.address_street + ", " + x.address_city + " " + x.address_state + ", " + x.address_zip ,
+            timeRange: x.time_range,
+            hasRequestedBooking: x.status != "available"
+          }
         }
-      })
+      )
     })
     .then(items => {
       let weeks = this.sortIntoWeeks(items)
@@ -162,12 +174,14 @@ export default class ScheduleWeekView extends BaseView {
     })
   }
 
-  render() {;
+  render() {
     const { navigate } = this.props.navigation;
     return(
       <View style={styles.container}>
         {this._renderSection()}
-        <TouchableHighlight style={ styles.plusButton } onPress={() => navigate("Calendar")}>
+        <TouchableHighlight style={ styles.plusButton } onPress={() => {
+          navigate("Calendar")
+        }}>
           <Image source={require('../Images/plus.png')} />
         </TouchableHighlight>
         <View style={ styles.bottomBar }></View>

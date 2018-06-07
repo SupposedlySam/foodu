@@ -24,7 +24,7 @@ export default class ScheduleDetail extends React.Component {
             <View style={ [styles.containerBox, styles.venueInfoContainer]}>
                 <View style={ styles.topBar }></View>
                 <Image style={ styles.venueImage } source={require("../Images/venue-img.png")} />
-                <View>
+                <View style={styles.venueTextContainer}>
                     <Text style={ styles.venueInfoHeader }>{name}</Text>
                     <Text style={ styles.venueInfoText }>{address}</Text>
                 </View>
@@ -87,6 +87,9 @@ const styles = StyleSheet.create({
         width: 67,
         borderRadius: 67,
         margin: 21
+    },
+    venueTextContainer: {
+        justifyContent: 'center'
     },
     venueInfoHeader: {
         color: BROWN, 

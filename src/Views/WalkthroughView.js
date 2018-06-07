@@ -6,7 +6,6 @@ import Footer from "../Components/Footer";
 export default class WalkthroughView extends BaseView {
   render() {
     const { navigate } = this.props.navigation;
-
     return (
       <View style={styles.container}>
         <Text>ScheduleWeekView</Text>
