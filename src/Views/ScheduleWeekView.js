@@ -145,7 +145,10 @@ export default class ScheduleWeekView extends BaseView {
     .catch(error => console.error(error))
     .then(myJson => {
       let filteredJson = myJson
-        .filter(x => x.foodtruck_auth_id == auth.currentUser.uid);
+        .filter(x => 
+          x.foodtruck_auth_id == auth.currentUser.uid && 
+          !moment(x.date).isBefore(moment())
+        );
 
         filteredJson.sort(function compare(a, b) {
             var dateA = new Date(a.date);

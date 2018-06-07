@@ -27,30 +27,32 @@ export default class MapView extends BaseView {
     fetch("https://data.colorado.gov/resource/ic4i-9zku.json")
     .then(response => response.json())
     .then(tastingRoomDataset => {
-        return tastingRoomDataset.filter(x => x.location != undefined).map(x => {
-          return {
-            "venueName": x.doing_business_as,
-            "street": x.location_address,
-            "city": x.location_city,
-            "state": x.location_state,
-            "zip": x.location_zip.substr(0, 5),
-            "latitude": x.location.coordinates[1],
-            "longitude": x.location.coordinates[0]
-          }
+        return tastingRoomDataset
+          .filter(x => x.location != undefined)
+          .map(x => {
+            return {
+              "venueName": x.doing_business_as,
+              "street": x.location_address,
+              "city": x.location_city,
+              "state": x.location_state,
+              "zip": x.location_zip.substr(0, 5),
+              "latitude": x.location.coordinates[1],
+              "longitude": x.location.coordinates[0]
+            }
+        })
       })
-    })
-    .then(myMarkers => this.setState({ markers: myMarkers }))
-    .catch(error =>  Alert.alert(
-      "An Error Has Occured", 
-      error.message,
-      [
-        {text: 'OK', onPress: () => {
-          navigate("ScheduleWeek")
-        }},
-        {text: 'Retry', onPress: () => this.forceUpdateHandler()}
-      ],
-      { cancelable: false }
-    ))
+      .then(myMarkers => this.setState({ markers: myMarkers }))
+      .catch(error =>  Alert.alert(
+        "An Error Has Occured", 
+        error.message,
+        [
+          {text: 'OK', onPress: () => {
+            navigate("ScheduleWeek")
+          }},
+          {text: 'Retry', onPress: () => this.forceUpdateHandler()}
+        ],
+        { cancelable: false }
+      ))
   }
 
   requestBooking = () => {
@@ -74,7 +76,7 @@ export default class MapView extends BaseView {
       navigate("ScheduleWeek")
     });
   };
-  
+
   render() {
     const { navigate } = this.props.navigation;
     return (
@@ -86,9 +88,7 @@ export default class MapView extends BaseView {
             longitude: -104.9903,
             latitudeDelta: 0.09,
             longitudeDelta: 0.04
-          }}
-          
-        >
+          }}>
           {this.state.markers.map((marker, index) => (
             <ExpoMapView.Marker
               key={index}

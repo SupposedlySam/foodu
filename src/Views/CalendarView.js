@@ -13,15 +13,16 @@ export default class CalendarView extends BaseView {
         this.markDate = this.markDate.bind(this);
 
         this.state = { 
-            markedDates: {} 
+            markedDates: {},
+            selectedDates: {} 
         };
     }
 
     createBooking() {
-        const { markedDates } = this.state;
+        const { markedDates, selectedDates } = this.state;
         const { navigate } = this.props.navigation;
-        Object.keys(markedDates).forEach(d => {
-            fetch("https://foodu-api.herokuapp.com/api/v1/bookings", {
+        let calls = Object.keys(selectedDates).map(d => {
+            return fetch("https://foodu-api.herokuapp.com/api/v1/bookings", {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
@@ -32,30 +33,38 @@ export default class CalendarView extends BaseView {
                     "date": d
                 })
             })
-            .catch(error => {
-                Alert.alert("Error", "An error has occured when submitting your schedule. Please try again.")
-            })
-            .then(response => {
-                navigate("ScheduleWeek")
-            });
         })
+
+        Promise.all( 
+            calls
+        )
+        .catch(error => {
+            Alert.alert("Error", "An error has occured when submitting your schedule. Please try again.")
+        })
+        .then(response => {
+            navigate("ScheduleWeek")
+        });
     }
 
     markDate = (day) => {
         const selectedDay = moment(day.dateString).format("YYYY-MM-DD");
         let selected = true;
-
-        if (this.state.markedDates[selectedDay]) {
-            // Already in marked dates, so reverse current marked state
-            selected = !this.state.markedDates[selectedDay].selected;
+        if (moment(selectedDay).isValid()) {
+            if (this.state.selectedDates[selectedDay]) {
+                // Already in marked dates, so reverse current marked state
+                selected = !this.state.selectedDates[selectedDay].selected;
+            }
+    
+            // Create a new object using object property spread since it should be immutable
+            // Reading: https://davidwalsh.name/merge-objects
+            const updatedSelectedDates = { ...this.state.selectedDates, ...{ [selectedDay]: { selected, selectedColor: SALMON } } };
+    
+            // Triggers component to render again, picking up the new state
+            this.setState({ 
+                selectedDates: updatedSelectedDates, 
+                markedDates: {...this.state.markedDates, ...updatedSelectedDates}
+            });
         }
-
-        // Create a new object using object property spread since it should be immutable
-        // Reading: https://davidwalsh.name/merge-objects
-        const updatedMarkedDates = { ...this.state.markedDates, ...{ [selectedDay]: { selected, selectedColor: SALMON } } };
-
-        // Triggers component to render again, picking up the new state
-        this.setState({ markedDates: updatedMarkedDates });
     };
 
     componentDidMount() {
@@ -71,7 +80,7 @@ export default class CalendarView extends BaseView {
                 return dateA - dateB;
             });
             
-            markedDates.map(b => {
+            let result = markedDates.map(b => {
                 return {
                     [b.date]: { 
                         selected: false, 
@@ -81,11 +90,19 @@ export default class CalendarView extends BaseView {
                 }
             })
             .reduce((a,e) => {
-                return e
+                return {
+                    ...a, 
+                    ...{ 
+                        [`"${moment(Object.keys(e)[0]).format("YYYY-MM-DD")}"`]: { 
+                            marked: true, 
+                            dotColor: SALMON
+                        } 
+                    }
+                }
             }, {})
 
             this.setState({ 
-                markedDates: markedDates, 
+                markedDates: result, 
                 ready: true 
             })
         })
@@ -94,7 +111,8 @@ export default class CalendarView extends BaseView {
     render() {
         return (
             <View style={styles.container}>
-                {this.state.ready && <View style={styles.container}>
+                {this.state.ready && 
+                <View style={styles.container}>
                     <Calendar 
                         markedDates={this.state.markedDates}
                         theme={{
