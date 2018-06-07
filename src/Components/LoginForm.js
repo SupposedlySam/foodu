@@ -1,5 +1,13 @@
 import React from "react";
-import { Button, StyleSheet, View, TextInput, Alert, TouchableHighlight, Text } from "react-native";
+import {
+  Button,
+  StyleSheet,
+  View,
+  TextInput,
+  Alert,
+  TouchableHighlight,
+  Text
+} from "react-native";
 import { SALMON } from "../constants";
 
 import firebase from "../../firebase";
@@ -14,19 +22,22 @@ export default class LoginForm extends React.Component {
     };
   }
 
-  _submitLogin = (email, password) => {
+  _submitLogin = () => {
+    let email = this.state.email
+    let password = this.state.password
     if (email === "" && password === "") {
       this.props.navigate("ScheduleWeek");
       return;
     }
+    
     firebase
       .auth()
       .signInWithEmailAndPassword(email, password)
-      .then(response => this.props.navigate("ScheduleWeek"))
       .catch(error => {
         Alert.alert(error.message);
         this.setState({ email: "", password: "" });
-      });
+      })
+      .then(response => this.props.navigate("ScheduleWeek"));
   };
 
   render() {
@@ -38,26 +49,25 @@ export default class LoginForm extends React.Component {
           placeholderTextColor="#f8f8f8"
           style={styles.input}
           autoCapitalize="none"
-          underlineColorAndroid='transparent'
+          underlineColorAndroid="transparent"
           value={this.state.email}
           onChangeText={text => this.setState({ email: text })}
         />
         <TextInput
-          onSubmitEditing={this._submitLogin}
+          secureTextEntry={true}
+          onSubmitEditing={() => this._submitLogin(this.state.email, this.state.password)}
           autoCorrect={false}
           placeholder="Password"
           placeholderTextColor="#f8f8f8"
           style={styles.input}
           autoCapitalize="none"
-          underlineColorAndroid='transparent'
+          underlineColorAndroid="transparent"
           value={this.state.password}
           onChangeText={text => this.setState({ password: text })}
         />
         <TouchableHighlight
           style={styles.signInContainer}
-          onPress={() =>
-            this._submitLogin(this.state.email, this.state.password)
-          }
+          onPress={() => this._submitLogin(this.state.email, this.state.password)}
         >
           <Text style={styles.signInText}>Sign In</Text>
         </TouchableHighlight>
@@ -74,7 +84,7 @@ const styles = StyleSheet.create({
     backgroundColor: SALMON,
     borderRadius: 20,
     height: 40,
-    shadowColor: '#000000',
+    shadowColor: "#000000",
     shadowOffset: {
       width: 0,
       height: 3
@@ -83,8 +93,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 1.0
   },
   signInText: {
-    textAlign: 'center',
-    color: '#fff',
+    textAlign: "center",
+    color: "#fff",
     fontSize: 14,
     lineHeight: 40
   },
@@ -93,7 +103,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     padding: 10,
     width: 220,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    backgroundColor: "rgba(255, 255, 255, 0.4)",
     borderRadius: 20,
     color: "#FFF"
   }

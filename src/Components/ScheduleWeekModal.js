@@ -36,8 +36,8 @@ export default class ScheduleWeekModal extends Component {
                 style={styles.circleImage}
                 source={require("../Images/blur-bread-bun.jpg")}
               />
-              <Text style={styles.name}>Restraunt Name</Text>
-              <Text style={styles.address}>Address</Text>
+              <Text style={styles.name}>{this.props.name}</Text>
+              <Text style={styles.address}>{this.props.address}</Text>
             </View>
           </TouchableOpacity>
         </Modal>

@@ -4,10 +4,13 @@ import BaseView from "./BaseView";
 import { MapView as ExpoMapView, Marker } from "expo";
 import MapViewCallout from "../Components/MapViewCallout";
 import { LINK_COLOR } from "../constants";
+import firebase, { auth } from "../../firebase"
 
 export default class MapView extends BaseView {
   constructor() {
     super();
+    this.forceUpdateHandler = this.forceUpdateHandler.bind(this);
+    this.requestBooking = this.requestBooking.bind(this);
 
     this.state = {
       markers: [],
@@ -15,42 +18,67 @@ export default class MapView extends BaseView {
     };
   }
 
-  componentDidMount() {
-    fetch('https://data.colorado.gov/resource/ic4i-9zku.json')
-    .then(response => response.json())
-    .then(myJson => {
-        return myJson.filter(x => x.location != undefined).map(x => {
-          return {
-            "latitude": x.location.coordinates[1],
-            "longitude": x.location.coordinates[0],
-            "title": x.doing_business_as,
-            "address": x.location_address,
-            "city": x.location_city,
-            "state": x.location_state,
-            "zip": x.location_zip.substr(0, 5)
-          }
+  forceUpdateHandler(){
+    this.forceUpdate();
+  };
 
+  componentDidMount() {
+    const { navigate } = this.props.navigation;
+    fetch("https://data.colorado.gov/resource/ic4i-9zku.json")
+    .then(response => response.json())
+    .then(tastingRoomDataset => {
+        return tastingRoomDataset
+          .filter(x => x.location != undefined)
+          .map(x => {
+            return {
+              "venueName": x.doing_business_as,
+              "street": x.location_address,
+              "city": x.location_city,
+              "state": x.location_state,
+              "zip": x.location_zip.substr(0, 5),
+              "latitude": x.location.coordinates[1],
+              "longitude": x.location.coordinates[0]
+            }
+        })
       })
-    })
-    .then(myMarkers => this.setState({ markers: myMarkers }))
-    .catch(error =>  Alert.alert(
-      "An Error Has Occured", 
-      error.message,
-      [
-        {text: 'OK', onPress: () => console.log('OK Pressed')},
-      ],
-      { cancelable: false }
-    ))
+      .then(myMarkers => this.setState({ markers: myMarkers }))
+      .catch(error =>  Alert.alert(
+        "An Error Has Occured", 
+        error.message,
+        [
+          {text: 'OK', onPress: () => {
+            navigate("ScheduleWeek")
+          }},
+          {text: 'Retry', onPress: () => this.forceUpdateHandler()}
+        ],
+        { cancelable: false }
+      ))
   }
 
   requestBooking = () => {
-    // post booking uuid with venue id
-    this.props.navigation.navigate("ScheduleWeek");
+    const { navigate } = this.props.navigation;
+    fetch("https://foodu-api.herokuapp.com/api/v1/venues", {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        "authId" : auth.currentUser.uid,
+        "date": this.props.navigation.state.params.searchDate,
+        ...this.state.selectedMarker
+      }),
+    })
+    .catch(error => {
+      Alert.alert('Error:', error)
+    })
+    .then(response => {
+      navigate("ScheduleWeek")
+    });
   };
 
   render() {
     const { navigate } = this.props.navigation;
-    
     return (
       <View style={{ flex: 1 }}>
         <ExpoMapView
@@ -60,8 +88,7 @@ export default class MapView extends BaseView {
             longitude: -104.9903,
             latitudeDelta: 0.09,
             longitudeDelta: 0.04
-          }}
-        >
+          }}>
           {this.state.markers.map((marker, index) => (
             <ExpoMapView.Marker
               key={index}

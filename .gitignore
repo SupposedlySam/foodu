@@ -19,3 +19,4 @@ yarn-error.log*
 App.js.orig
 
 firebase.js
+/src/Components/ScheduleDetail.js.orig
